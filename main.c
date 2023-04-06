@@ -227,15 +227,11 @@ int main(int argc, char *argv[])
     memset(&saddr, 0, sizeof(saddr));
     memset(&caddr, 0, sizeof(caddr));
 
-    // bzero(&saddr, sizeof(struct sockaddr_in));
     saddr.sin_family = AF_INET;
     saddr.sin_addr.s_addr = INADDR_ANY;
-    saddr.sin_port = htons(DEFAULT_MSOP_PORT - 1);
-
-    printf("Host IP: %s, Port: %d\n", inet_ntoa(saddr.sin_addr), ntohs(saddr.sin_port));
+    //saddr.sin_port = htons(DEFAULT_MSOP_PORT - 1);
 
     /* Client IP address and port */
-    // bzero(&caddr, sizeof(struct sockaddr_in));
     memset((void *)&caddr, 0, sizeof(struct sockaddr_in));
     caddr.sin_family = AF_INET;
 
@@ -256,8 +252,6 @@ int main(int argc, char *argv[])
     {
         caddr.sin_addr.s_addr = inet_addr(ipaddr);
     }
-
-    printf("Target IP: %s, Port: %d\n", inet_ntoa(caddr.sin_addr), ntohs(caddr.sin_port));
 
     /* Create socket (UDP default) */
     int sockfd;
@@ -286,6 +280,10 @@ int main(int argc, char *argv[])
     /* Packaging point cloud data */
     AsensingPacket packet = {0};
 
+    getsockname(sockfd, (struct sockaddr *)&saddr, (socklen_t *)&len);
+
+    printf("  Host IP: %s, Port: %d\n",   inet_ntoa(saddr.sin_addr), ntohs(saddr.sin_port));
+    printf("Target IP: %s, Port: %d\n\n", inet_ntoa(caddr.sin_addr), ntohs(caddr.sin_port));
     printf("Size of packet = %lu bytes\n", sizeof(packet));
     printf("Size of Header = %lu bytes\n", sizeof(AsensingHeader));
     printf("Size of Block  = %lu bytes (each %lu bytes)\n", sizeof(AsensingBlock) * MAX_BLOCK_NUM * ROLL_NUM, sizeof(AsensingBlock));
