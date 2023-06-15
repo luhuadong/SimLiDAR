@@ -26,8 +26,13 @@
 #include <time.h>
 
 #include "SimLiDAR.h"
+#include "mysocket.h"
 
-#define BUFFER_SIZE            1500
+#define DEST_PORT         51180
+#define DSET_IP_ADDRESS   "127.0.0.1"
+#define USING_RAW_SOCKET
+
+#define BUFFER_SIZE       1500
 static uint8_t buffer[BUFFER_SIZE] = {0};
 const char *hello = "Hello from server";
 
@@ -256,6 +261,17 @@ int main(int argc, char *argv[])
     /* Create socket (UDP default) */
     int sockfd;
 
+#ifdef USING_RAW_SOCKET
+    sockfd = socket(AF_INET, SOCK_RAW, IPPROTO_RAW); // 创建原始套接字
+    if (sockfd < 0)
+    {
+        perror("socket error");
+        return -1;
+    }
+
+    int enable = 1;
+    setsockopt(sockfd, IPPROTO_IP, IP_HDRINCL, &enable, sizeof(enable)); // 开启IP头部选项
+#else
     if ((sockfd = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
     {
         perror("socket creation failed");
@@ -276,6 +292,7 @@ int main(int argc, char *argv[])
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
+#endif
 
     /* Packaging point cloud data */
     AsensingPacket packet = {0};
@@ -312,9 +329,12 @@ int main(int argc, char *argv[])
 
             fill_packet(&packet, distance, sn, i);
 
+#ifdef USING_RAW_SOCKET
+            send_udp_packet(sockfd, ipaddr, atoi(port), &packet, sizeof(packet));
+#else
             ret = sendto(sockfd, &packet, sizeof(packet), 0, (struct sockaddr *)&caddr, len);
             //ret = sendto(sockfd, &msg, strlen(msg), 0, (struct sockaddr *)&caddr, len);
-
+#endif
             if (ret < 0)
             {
                 printf("Send package error...\n");
@@ -327,7 +347,7 @@ int main(int argc, char *argv[])
 
         frameID++;
 
-        usleep(200000); // 10Hz
+        usleep(10000); // 10Hz
         //sleep(1);
         distance++;
     }
