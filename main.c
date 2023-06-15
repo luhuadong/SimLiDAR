@@ -158,12 +158,13 @@ static void show_usage(const char *cmd)
 {
     printf("Usage: %s [options] ... \n", cmd);
     printf("This is a point cloud client demo\n\n");
-    printf("  -h, --help           display this help and exit\n");
-    printf("  -v, --version        output version information and exit\n");
-    printf("  -i, --ipaddr=ADDR    set target IP address\n");
-    printf("  -p, --port=PORT      set target port\n");
-    printf("  -n, --count=NUM      set loop times (number of frames)\n");
-    printf("  -l, --laser=NUM      set the number of laser module\n\n");
+    printf("  -h, --help           Display this help and exit\n");
+    printf("  -v, --version        Output version information and exit\n");
+    printf("  -a, --ipaddr=ADDR    Set target IP address\n");
+    printf("  -p, --port=PORT      Set target port\n");
+    printf("  -n, --count=NUM      Set loop times (number of frames)\n");
+    printf("  -i, --interval=NUM   Set the interval for trigger (unit: ms, default 100)\n");
+    printf("  -l, --laser=NUM      Set the number of laser module\n\n");
 
     exit(0);
 }
@@ -180,19 +181,21 @@ int main(int argc, char *argv[])
     int option;
     char *ipaddr = NULL;
     char *port = NULL;
+    unsigned int interval = 100;
     
     struct sockaddr_in saddr, caddr;
     size_t len = sizeof(struct sockaddr);
 
-    const char *const short_options = "hvi:p:n:l:";
+    const char *const short_options = "hva:p:n:i:l:";
     const struct option long_options[] = {
 
-        {"help",    0, NULL, 'h'},
-        {"version", 0, NULL, 'v'},
-        {"ipaddr",  1, NULL, 'i'},
-        {"port",    1, NULL, 'p'},
-        {"count",   1, NULL, 'n'},
-        {"laser",   1, NULL, 'l'},
+        {"help",     0, NULL, 'h'},
+        {"version",  0, NULL, 'v'},
+        {"ipaddr",   1, NULL, 'a'},
+        {"port",     1, NULL, 'p'},
+        {"count",    1, NULL, 'n'},
+        {"interval", 1, NULL, 'i'},
+        {"laser",    1, NULL, 'l'},
         {NULL, 0, NULL, 0}};
 
     while ((option = getopt_long(argc, argv, short_options, long_options, NULL)) != -1)
@@ -205,7 +208,7 @@ int main(int argc, char *argv[])
         case 'v':
             show_version();
             break;
-        case 'i':
+        case 'a':
             ipaddr = strdup(optarg);
             break;
         case 'p':
@@ -213,6 +216,9 @@ int main(int argc, char *argv[])
             break;
         case 'n':
             count = atol(optarg);
+            break;
+        case 'i':
+            interval = atol(optarg);
             break;
         case 'l':
             gLaserNum = atol(optarg);
@@ -347,8 +353,7 @@ int main(int argc, char *argv[])
 
         frameID++;
 
-        usleep(10000); // 10Hz
-        //sleep(1);
+        usleep(interval * 1000); // default 10Hz
         distance++;
     }
 
