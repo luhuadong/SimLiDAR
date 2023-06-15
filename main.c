@@ -30,7 +30,6 @@
 
 #define DEST_PORT         51180
 #define DSET_IP_ADDRESS   "127.0.0.1"
-#define USING_RAW_SOCKET
 
 #define BUFFER_SIZE       1500
 static uint8_t buffer[BUFFER_SIZE] = {0};
@@ -183,7 +182,7 @@ int main(int argc, char *argv[])
     char *port = NULL;
     unsigned int interval = 100;
     
-    struct sockaddr_in saddr, caddr;
+    struct sockaddr_in host_addr, dest_addr;
     size_t len = sizeof(struct sockaddr);
 
     const char *const short_options = "hva:p:n:i:l:";
@@ -235,33 +234,33 @@ int main(int argc, char *argv[])
 
     /* Server IP address and port */
 
-    memset(&saddr, 0, sizeof(saddr));
-    memset(&caddr, 0, sizeof(caddr));
+    memset(&host_addr, 0, sizeof(host_addr));
+    memset(&dest_addr, 0, sizeof(dest_addr));
 
-    saddr.sin_family = AF_INET;
-    saddr.sin_addr.s_addr = INADDR_ANY;
-    //saddr.sin_port = htons(DEFAULT_MSOP_PORT - 1);
+    host_addr.sin_family = AF_INET;
+    host_addr.sin_addr.s_addr = INADDR_ANY;
+    //host_addr.sin_port = htons(DEFAULT_MSOP_PORT - 1);
 
     /* Client IP address and port */
-    memset((void *)&caddr, 0, sizeof(struct sockaddr_in));
-    caddr.sin_family = AF_INET;
+    memset((void *)&dest_addr, 0, sizeof(struct sockaddr_in));
+    dest_addr.sin_family = AF_INET;
 
     if (NULL == port)
     {
-        caddr.sin_port = htons(DEFAULT_MSOP_PORT);
+        dest_addr.sin_port = htons(DEFAULT_MSOP_PORT);
     }
     else
     {
-        caddr.sin_port = htons(atoi(port));
+        dest_addr.sin_port = htons(atoi(port));
     }
 
     if (NULL == ipaddr)
     {
-        caddr.sin_addr.s_addr = htonl(INADDR_BROADCAST); //htonl(INADDR_ANY);
+        dest_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST); //htonl(INADDR_ANY);
     }
     else
     {
-        caddr.sin_addr.s_addr = inet_addr(ipaddr);
+        dest_addr.sin_addr.s_addr = inet_addr(ipaddr);
     }
 
     /* Create socket (UDP default) */
@@ -283,6 +282,7 @@ int main(int argc, char *argv[])
         perror("socket creation failed");
         exit(EXIT_FAILURE);
     }
+#endif
 
     /* Enable broadcast */
     ret = setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST, (char *)&yes, sizeof(yes));
@@ -293,20 +293,19 @@ int main(int argc, char *argv[])
     }
 
     /* Bind the socket with the server address */
-    if (bind(sockfd, (const struct sockaddr *)&saddr, sizeof(saddr)) < 0)
+    if (bind(sockfd, (const struct sockaddr *)&host_addr, sizeof(host_addr)) < 0)
     {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
-#endif
 
     /* Packaging point cloud data */
     AsensingPacket packet = {0};
 
-    getsockname(sockfd, (struct sockaddr *)&saddr, (socklen_t *)&len);
+    getsockname(sockfd, (struct sockaddr *)&host_addr, (socklen_t *)&len);
 
-    printf("  Host IP: %s, Port: %d\n",   inet_ntoa(saddr.sin_addr), ntohs(saddr.sin_port));
-    printf("Target IP: %s, Port: %d\n\n", inet_ntoa(caddr.sin_addr), ntohs(caddr.sin_port));
+    printf("  Host IP: %s, Port: %d\n",   inet_ntoa(host_addr.sin_addr), ntohs(host_addr.sin_port));
+    printf("Target IP: %s, Port: %d\n\n", inet_ntoa(dest_addr.sin_addr), ntohs(dest_addr.sin_port));
     printf("Size of packet = %lu bytes\n", sizeof(packet));
     printf("Size of Header = %lu bytes\n", sizeof(AsensingHeader));
     printf("Size of Block  = %lu bytes (each %lu bytes)\n", sizeof(AsensingBlock) * MAX_BLOCK_NUM * ROLL_NUM, sizeof(AsensingBlock));
@@ -336,10 +335,10 @@ int main(int argc, char *argv[])
             fill_packet(&packet, distance, sn, i);
 
 #ifdef USING_RAW_SOCKET
-            send_udp_packet(sockfd, ipaddr, atoi(port), &packet, sizeof(packet));
+            ret = send_udp_packet(sockfd, ipaddr, atoi(port), &packet, sizeof(packet));
 #else
-            ret = sendto(sockfd, &packet, sizeof(packet), 0, (struct sockaddr *)&caddr, len);
-            //ret = sendto(sockfd, &msg, strlen(msg), 0, (struct sockaddr *)&caddr, len);
+            ret = sendto(sockfd, &packet, sizeof(packet), 0, (struct sockaddr *)&dest_addr, len);
+            //ret = sendto(sockfd, &msg, strlen(msg), 0, (struct sockaddr *)&dest_addr, len);
 #endif
             if (ret < 0)
             {

@@ -103,7 +103,7 @@ int send_udp_packet(int sockfd, const char *dest_ip, unsigned short dest_port, c
     dest_addr.sin_port = htons(dest_port);
     dest_addr.sin_addr.s_addr = inet_addr(dest_ip);
 
-    printf("UDP client send to %s:%u\n", dest_ip, dest_port);
+    // printf("UDP client send to %s:%u\n", dest_ip, dest_port);
 
     // 发送数据包
     int ret = sendto(sockfd, packet, sizeof(packet), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
@@ -112,6 +112,6 @@ int send_udp_packet(int sockfd, const char *dest_ip, unsigned short dest_port, c
         perror("sendto error");
         return ret;
     }
-    printf("Send %u bytes\n", ret);
+    // printf("Send %u bytes\n", ret);
     return ret;
 }
