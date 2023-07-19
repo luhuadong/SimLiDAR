@@ -88,10 +88,10 @@ static void fill_packet(AsensingPacket *packet, uint16_t distance, uint16_t sn, 
     gettimeofday(&tv, NULL);
 
     /* 此函数返回的时间日期未经时区转换，而是 UTC 时间 */
-    //pt = gmtime(&tv.tv_sec);
+    pt = gmtime(&tv.tv_sec);
 
     /* 此函数返回的时间日期经过时区转换，是本地时间 */
-    pt = localtime(&tv.tv_sec);
+    //pt = localtime(&tv.tv_sec);
 
 #if DEBUG
     printf("start : %ld.%ld\n", tv.tv_sec, tv.tv_usec);
